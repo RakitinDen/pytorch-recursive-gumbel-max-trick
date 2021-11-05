@@ -3,11 +3,10 @@ import sys
 sys.path.append('../')
 
 from spanning_tree.utils import BatchDisjointSets, span_mask_unused_values, get_lightest_edge
-from structured_variable import uniform_to_exp
-
+from estimators import uniform_to_exp
 
 # defines F_struct for spanning tree
-# applies Kruskals' for perturbed weight matrix
+# applies the Kruskals' algorithm to a perturbed weight matrix
 def span_struct(exp, **kwargs):
     assert(exp.ndimension() == 3)
     batch_size = exp.shape[0]
@@ -30,9 +29,8 @@ def span_struct(exp, **kwargs):
 
     return edges
 
-
 # defines F_log_prob for spanning tree
-# calculates log probability log(p(T)) of the execution trace
+# calculates the log probability log(p(T)) of the execution trace
 def span_log_prob(struct_var, logits, **kwargs):
     logits = span_mask_unused_values(logits, float('inf'))
     assert (struct_var.ndimension() == logits.ndimension())
@@ -53,9 +51,8 @@ def span_log_prob(struct_var, logits, **kwargs):
         disjoint_sets.union(set_u, set_v)
     return log_p
 
- 
 # defines F_cond for spanning tree
-# samples from conditional distribution p(E | T) of exponentials given execution trace
+# samples from the conditional distribution p(E | T) of exponentials given the execution trace
 def span_cond(struct_var, logits, uniform, **kwargs):
     batch_size = logits.shape[0]
     n_vertices = logits.shape[1]
@@ -68,7 +65,7 @@ def span_cond(struct_var, logits, uniform, **kwargs):
 
     max_value = 0
     for i in range(n_vertices - 1):
-        v_1, v_2 = b[:, i, 0], b[:, i, 1]
+        v_1, v_2 = struct_var[:, i, 0], struct_var[:, i, 1]
 
         masked_logits = logits.masked_fill(disjoint_sets.get_mask(), float('inf'))
         min_logits = (-masked_logits).logsumexp((1, 2))

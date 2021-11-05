@@ -12,9 +12,7 @@ sys.path.append('../..')
 from spanning_tree.critics import RELAXCritic
 from spanning_tree.functions import span_struct, span_log_prob, span_cond
 from spanning_tree.utils import span_mask_unused_values
-from estimators import E_reinforce, T_reinforce, relax
-from structured_variable import uniform_to_exp
-
+from estimators import uniform_to_exp, E_reinforce, T_reinforce, relax
 
 import os 
 from itertools import chain

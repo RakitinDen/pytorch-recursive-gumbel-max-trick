@@ -8,15 +8,14 @@ class Arborescence:
 
     def detach(self):
         arborescence = self.arborescence.detach()
-
-        trace = []
-        for trace_i in self.trace:
-            trace.append(trace_i)
-            trace[-1]['mask'] = trace[-1]['mask'].detach()
-            trace[-1]['min_x'] = trace[-1]['min_x'].detach()
-            trace[-1]['min_y'] = trace[-1]['min_y'].detach()
+        trace = self.trace
 
         return Arborescence(arborescence, trace)
+
+
+def expand_mask(mask):
+    out = ~mask
+    return mask[:, None, :] * out[:, :, None]
 
 
 def calc_trace_log_prob(logits, trace, length):
@@ -33,10 +32,17 @@ def calc_trace_log_prob(logits, trace, length):
 
 
 # used in E_reinforce for correct calculation of score
-# masks diagonal elements 
-def arb_mask_unused_values(values, root=0, **kwargs):
+# masks diagonal elements
+# masks elements that are not included in the graph (needed in case of different lengths in a batch)
+def arb_mask_unused_values(values, root=0, lengths=None, **kwargs):
     batch_size = values.shape[0]
     dim = values.shape[1]
-    mask = 1 - torch.eye(dim).unsqueeze(0).repeat(batch_size, 1, 1).to(device)
+    mask = 1 - torch.eye(dim).unsqueeze(0).repeat(batch_size, 1, 1)
     mask[:, :, 0] = 0
+
+    if lengths is not None:
+        mask_lengths = lengths[:, None] > torch.arange(dim)[None, :]
+        mask_lengths = mask_lengths[:, None, :] * mask_lengths[:, :, None]
+        mask *= mask_lengths
+
     return values * mask

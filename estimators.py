@@ -1,17 +1,31 @@
 import torch
 
 
+def uniform_to_exp(log_mean, uniform=None, enable_grad=False):
+    if uniform is not None:
+        assert uniform.size() == log_mean.size()
+    else:
+        uniform = torch.distributions.utils.clamp_probs(torch.rand_like(log_mean))
+
+    exp = torch.exp(log_mean + torch.log(-torch.log(uniform)))
+    if enable_grad:
+        exp.requires_grad_(True)
+
+    return exp
+
+
 def reattach_exp_to_new_logits(logits, exp):
     exp = torch.exp(torch.log(exp.detach()) + logits - logits.detach())
     return exp
 
 
-def E_reinforce(loss_value, logits, exp, mask_unused_values, **kwargs):
+def E_reinforce(loss_value, logits, exp, mask_unused_values=None, **kwargs):
     loss_value = loss_value.detach()
     exp = exp.detach()
 
     log_prob = -logits - torch.exp(torch.log(exp) - logits)
-    log_prob = mask_unused_values(log_prob, **kwargs)
+    if mask_unused_values is not None:
+        log_prob = mask_unused_values(log_prob, **kwargs)
 
     dims_except_batch = tuple(-i for i in range(1, logits.ndimension()))
     log_prob = log_prob.sum(dim=dims_except_batch)

@@ -2,15 +2,14 @@ import torch
 import sys
 sys.path.append('../')
 
-from structured_variable import uniform_to_exp
+from estimators import uniform_to_exp
 from edmonds import get_arborescence_batch
-from arborescence.utils import Arborescence, calc_trace_log_prob
+from arborescence.utils import Arborescence, expand_mask, calc_trace_log_prob
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
 # defines F_struct for arborescence
-# applies Chu-Liu Edmonds for perturbed weight matrix
+# applies the Chu-Liu Edmonds' algorithm to a perturbed weight matrix
 def arb_struct(exp, lengths, root=0, **kwargs):
     assert exp.ndimension() == 3
 
@@ -36,7 +35,7 @@ def arb_struct(exp, lengths, root=0, **kwargs):
 
 
 # defines F_log_prob for arborescence
-# calculates log probability log(p(T)) of the execution trace
+# calculates the log probability log(p(T)) of the execution trace
 def arb_log_prob(struct_var, logits, lengths, **kwargs):
     batch_size = logits.shape[0]
     dim = logits.shape[1]
@@ -55,7 +54,7 @@ def arb_log_prob(struct_var, logits, lengths, **kwargs):
 
 
 # defines F_cond for arborescence
-# samples from conditional distribution p(E | T) of exponentials given execution trace
+# samples from the conditional distribution p(E | T) of exponentials given the execution trace
 def arb_cond(struct_var, logits, uniform, lengths, **kwargs):
     batch_size = logits.shape[0]
     cond_exp = torch.zeros_like(logits)
