@@ -77,7 +77,7 @@ def arb_cond(struct_var, logits, uniform, lengths, **kwargs):
         non_minimums[min_x, min_y] = float('-inf')
 
         cond_exp[i, :lengths[i], :lengths[i]] += uniform_to_exp(
-            log_mean=logits[i, :lengths[i], :lengths[i]] + non_minimums,
+            logits=logits[i, :lengths[i], :lengths[i]] + non_minimums,
             uniform=uniform[i, :lengths[i], :lengths[i]],
             enable_grad=False)
 

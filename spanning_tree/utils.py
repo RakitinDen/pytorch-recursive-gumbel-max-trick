@@ -1,12 +1,11 @@
 import torch
 
-
 class BatchDisjointSets():
     
-    def __init__(self, bsz, n_vertices):
+    def __init__(self, bsz, dim):
         self.bsz = bsz
-        self.n_vertices = n_vertices
-        self.sets = torch.eye(self.n_vertices, dtype=torch.long)
+        self.dim = dim
+        self.sets = torch.eye(self.dim, dtype=torch.long)
         self.sets = self.sets.unsqueeze(0).repeat(self.bsz, 1, 1)
 
     def find(self, v):
@@ -25,14 +24,14 @@ class BatchDisjointSets():
 
 
 def span_mask_unused_values(w, value=float('inf'), **kwargs):
-    batch_size, n_vertices, _ = w.size()
-    mask = torch.tril(torch.ones(1, n_vertices, n_vertices, dtype=torch.bool))
+    batch_size, dim, _ = w.size()
+    mask = torch.tril(torch.ones(1, dim, dim, dtype=torch.bool))
     masked_w = w.masked_fill(mask, value)
     return masked_w
 
 
 def get_lightest_edge(w):
-    batch_size, n_vertices, _ = w.size()
-    flat_w = w.view(batch_size, n_vertices * n_vertices)
+    batch_size, dim, _ = w.size()
+    flat_w = w.view(batch_size, dim * dim)
     flat_edge = torch.argmin(flat_w, dim=1)
-    return flat_edge // n_vertices, flat_edge % n_vertices
+    return flat_edge // dim, flat_edge % dim

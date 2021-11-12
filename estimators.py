@@ -1,13 +1,13 @@
 import torch
 
 
-def uniform_to_exp(log_mean, uniform=None, enable_grad=False):
+def uniform_to_exp(logits, uniform=None, enable_grad=False):
     if uniform is not None:
-        assert uniform.size() == log_mean.size()
+        assert uniform.size() == logits.size()
     else:
-        uniform = torch.distributions.utils.clamp_probs(torch.rand_like(log_mean))
+        uniform = torch.distributions.utils.clamp_probs(torch.rand_like(logits))
 
-    exp = torch.exp(log_mean + torch.log(-torch.log(uniform)))
+    exp = torch.exp(logits + torch.log(-torch.log(uniform)))
     if enable_grad:
         exp.requires_grad_(True)
 

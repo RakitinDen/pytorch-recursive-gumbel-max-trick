@@ -1,7 +1,6 @@
 import torch
 import sys
 sys.path.append('../')
-import math
 
 from estimators import uniform_to_exp
 from matching.utils import Matching
