@@ -19,7 +19,9 @@ def reattach_exp_to_new_logits(logits, exp):
     return exp
 
 
-def E_reinforce(loss_value, logits, exp, mask_unused_values=None, **kwargs):
+def E_reinforce(loss_value, logits, exp, plus_samples=1, mask_unused_values=None, **kwargs):
+    batch_size = logits.shape[0] // plus_samples
+
     loss_value = loss_value.detach()
     exp = exp.detach()
 
@@ -32,28 +34,48 @@ def E_reinforce(loss_value, logits, exp, mask_unused_values=None, **kwargs):
 
     score = torch.autograd.grad([log_prob], [logits], grad_outputs=torch.ones_like(log_prob))[0]
 
-    for i in range(logits.ndimension() - 1):
-        loss_value = loss_value.unsqueeze(-1)
+    if plus_samples > 1:
+        score_shape = (batch_size, plus_samples) + logits.shape[1:]
+        score = score.view(score_shape)
 
-    grad = loss_value * score
+        loss_value = loss_value.view(batch_size, plus_samples)
+        loss_value = loss_value - loss_value.mean(dim=-1)[:, None]
+        for i in range(logits.ndimension() - 1):
+            loss_value = loss_value.unsqueeze(-1)
 
-    assert grad.size() == logits.size()
+        grad = (loss_value * score).sum(dim=1) / (plus_samples - 1)
+    else:
+        for i in range(logits.ndimension() - 1):
+            loss_value = loss_value.unsqueeze(-1)
+
+        grad = loss_value * score
 
     return grad
 
 
-def T_reinforce(loss_value, struct_var, logits, f_log_prob, **kwargs):
+def T_reinforce(loss_value, struct_var, logits, f_log_prob, plus_samples=1, **kwargs):
+    batch_size = logits.shape[0] // plus_samples
+
     loss_value = loss_value.detach()
     struct_var = struct_var.detach()
     log_prob = f_log_prob(struct_var, logits, **kwargs)
     score = torch.autograd.grad([log_prob], [logits], grad_outputs=torch.ones_like(log_prob))[0]
 
-    for i in range(logits.ndimension() - 1):
-        loss_value = loss_value.unsqueeze(-1)
+    if plus_samples > 1:
+        score_shape = (batch_size, plus_samples) + logits.shape[1:]
+        score = score.view(score_shape)
 
-    grad = loss_value * score
+        loss_value = loss_value.view(batch_size, plus_samples)
+        loss_value = loss_value - loss_value.mean(dim=-1)[:, None]
+        for i in range(logits.ndimension() - 1):
+            loss_value = loss_value.unsqueeze(-1)
 
-    assert grad.size() == logits.size()
+        grad = (loss_value * score).sum(dim=1) / (plus_samples - 1)
+    else:
+        for i in range(logits.ndimension() - 1):
+            loss_value = loss_value.unsqueeze(-1)
+
+        grad = loss_value * score
 
     return grad
 

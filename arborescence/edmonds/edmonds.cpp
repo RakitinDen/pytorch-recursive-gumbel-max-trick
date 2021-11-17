@@ -1,20 +1,14 @@
-#include <iostream>
 #include <vector>
-#include <map>
 #include <unordered_map>
-#include <unordered_set>
 #include <limits>
 #include <random>
 #include <chrono>
 #include <tuple>
 #include <torch/extension.h>
 
-
-using std::cout;
 using namespace torch::indexing;
 
 #define idx(batch_idx, i, j, max_n) batch_idx * max_n * max_n + i * max_n + j 
-
 
 class DisjointSetUnion {
  public:
@@ -78,8 +72,6 @@ class DisjointSetUnion {
     std::vector<int> rank;
 };
 
-
-
 void dfs_cycle(
     std::unordered_map<int, std::vector<int>>& graph,
     std::unordered_map<int, char>& visited,
@@ -95,7 +87,6 @@ void dfs_cycle(
     if (cycled) {
         return;
     }
-
 
     for (auto iter = graph[vertex].begin(); iter != graph[vertex].end(); ++iter) {
         if (visited[*iter] == '0') {
@@ -116,7 +107,6 @@ void dfs_cycle(
 
     visited[vertex] = '2';
 }
-
 
 std::vector<int> find_cycle(std::unordered_map<int, std::vector<int>>& graph) {
     std::unordered_map<int, char> visited;
@@ -151,13 +141,11 @@ std::vector<int> find_cycle(std::unordered_map<int, std::vector<int>>& graph) {
     return result;
 }
 
-
 struct MinStats {
     std::vector<int> min_x;
     std::vector<int> min_y;
     std::vector<std::vector<int>> mask;
 };
-
 
 std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> get_minima(
     const std::vector<float>& weights,
@@ -167,7 +155,6 @@ std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> get_minima
     int batch_idx,
     int length)
 {
-
     std::unordered_map<int, float> min_value;
     std::unordered_map<int, int> min_x;
     std::unordered_map<int, int> min_y;
@@ -184,7 +171,6 @@ std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> get_minima
             }
 
             float value = weights[idx(batch_idx, i, j, max_n)];
-
             if (set_i != set_j) {
                 if (min_value.find(set_j) == min_value.end()) {
                     min_value.emplace(std::make_pair(set_j, value));
@@ -201,7 +187,6 @@ std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>> get_minima
 
     return std::make_pair(min_x, min_y);
 }
-
 
 std::unordered_map<int, std::vector<int>> get_min_graph(
     const std::unordered_map<int, int>& min_x,
@@ -221,10 +206,8 @@ std::unordered_map<int, std::vector<int>> get_min_graph(
             result[v_set_from].push_back(v_set_to);
         }
     }
-
     return result;
 }
-
 
 std::unordered_map<int, std::vector<int>> expand_arborescence(
     const std::vector<float>& weights,
@@ -329,7 +312,6 @@ std::unordered_map<int, std::vector<int>> expand_arborescence(
     return result;
 }
 
-
 std::vector<std::vector<int>> adj_matrix(int n, const std::unordered_map<int, std::vector<int>>& graph) {
     std::vector<std::vector<int>> res(n,
         std::vector<int>(n));
@@ -344,7 +326,6 @@ std::vector<std::vector<int>> adj_matrix(int n, const std::unordered_map<int, st
     return res;
 }
 
-
 std::vector<int> lin_adj_matrix(int n, const std::unordered_map<int, std::vector<int>>& graph) {
     std::vector<int> res(n * n, 0);
     for (auto iter = graph.begin(); iter != graph.end(); ++iter) {
@@ -357,7 +338,6 @@ std::vector<int> lin_adj_matrix(int n, const std::unordered_map<int, std::vector
 
     return res;
 }
-
 
 void update_stats(
     MinStats& stats,
@@ -386,7 +366,6 @@ void update_stats(
         }
     }
 }
-
 
 std::unordered_map<int, std::vector<int>> get_arborescence(
     std::vector<float>& weights,
@@ -462,7 +441,6 @@ std::unordered_map<int, std::vector<int>> get_arborescence(
     );
 }
 
-
 template <typename T>
 std::vector<T> linearize(const std::vector<std::vector<T>>& mtx) {
     std::vector<T> result;
@@ -476,9 +454,7 @@ std::vector<T> linearize(const std::vector<std::vector<T>>& mtx) {
     return result;
 }
 
-
 using ArbStats = std::tuple<torch::Tensor, std::vector<torch::Tensor>, std::vector<torch::Tensor>, std::vector<torch::Tensor>>;
-
 
 ArbStats convert_to_tensors(
     std::vector<int>& lin_arb,
@@ -511,7 +487,6 @@ ArbStats convert_to_tensors(
 
     return std::make_tuple(arb_res, min_xs, min_ys, masks);
 }
-
 
 ArbStats get_arborescence_batch(torch::Tensor weights, int root, torch::Tensor lengths) {
     int batch_size = weights.size(0);
@@ -550,10 +525,8 @@ ArbStats get_arborescence_batch(torch::Tensor weights, int root, torch::Tensor l
     return convert_to_tensors(arb_res, min_stats, lengths_vec, batch_size, max_n);
 }
 
-
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("get_arborescence_batch",
         &get_arborescence_batch,
         "Get minimum spanning arborescences over batch");
 }
-

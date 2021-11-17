@@ -1,61 +1,120 @@
 import torch
+
 import sys
 sys.path.append('../')
-
 from estimators import uniform_to_exp
 from edmonds import get_arborescence_batch
 from arborescence.utils import Arborescence, expand_mask, calc_trace_log_prob
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-# defines F_struct for arborescence
-# applies the Chu-Liu Edmonds' algorithm to a perturbed weight matrix
 def arb_struct(exp, lengths, root=0, **kwargs):
-    assert exp.ndimension() == 3
+    '''
+    Defines F_struct for arborescence
+    Applies the Chu-Liu Edmonds' algorithm to a weight matrix 'exp'
+    Calculates the minimal spanning arborescence and the execution trace
+    get_arborescence_batch is implemented in C++ and performs all the fundamental calculations
 
+    Input
+    --------------------
+    exp         : torch.Tensor | batch_size x dim x dim |
+                  Contains a batch of adjacency matrices
+
+    lengths     : torch.Tensor | batch_size | 
+                  Contains dimensions of graphs in the batch (lengths[i] <= dim)
+
+    root        : int
+                  Defines root of the arborescence for all the graphs in a batch
+
+    **kwargs    : Needed to support usage of different F_struct in the estimators' implementation
+
+    Output
+    --------------------
+    struct_var  : Arborescence (defined in arborescence.utils)
+                  Contains the spanning arborescences with the corresponding execution traces
+    '''
     batch_size = exp.shape[0]
 
-    arbs, min_xs, min_ys, masks = get_arborescence_batch(
+    arborescence, min_xs, min_ys, masks = get_arborescence_batch(
         exp.detach().cpu(), root, lengths.cpu().int())
 
-    arbs = arbs.to(device)
     trace = []
-
     for i in range(batch_size):
         trace_i = {}
-        trace_i['min_x'] = min_xs[i].to(device)
-        trace_i['min_y'] = min_ys[i].to(device)
-        bool_mask = masks[i].to(device)
+        trace_i['min_x'] = min_xs[i]
+        trace_i['min_y'] = min_ys[i]
+        bool_mask = masks[i]
         bool_mask = ~expand_mask(bool_mask.bool())
         mask_i = (bool_mask).float().masked_fill_(bool_mask, float('inf'))
         trace_i['mask'] = mask_i
         trace.append(trace_i)
 
-    return Arborescence(arbs, trace)
+    struct_var = Arborescence(arborescence, trace)
+    return struct_var
 
-
-# defines F_log_prob for arborescence
-# calculates the log probability log(p(T)) of the execution trace
 def arb_log_prob(struct_var, logits, lengths, **kwargs):
+    '''
+    Defines F_log_prob for arborescence
+    Calculates the log probability log(p(T)) of the execution trace
+
+    Input
+    --------------------
+    struct_var  : Arborescence (defined in arborescence.utils)
+                  Contains a batch of arborescences with the corresponding execution traces
+
+    logits      : torch.Tensor | batch_size x dim x dim |
+                  Contains parameters (log(mean)) of the exponential distributions of edge weights
+
+    lengths     : torch.Tensor | batch_size | 
+                  Contains dimensions of graphs in the batch (lengths[i] <= dim)
+
+    **kwargs    : Needed to support usage of different F_log_prob in the estimators' implementation
+
+    Output
+    --------------------
+    log_prob    : torch.Tensor | batch_size |
+                  Contains log probabilities of the execution traces for graphs in the batch
+    '''
     batch_size = logits.shape[0]
     dim = logits.shape[1]
+
     used_logits = logits.masked_fill(
-        torch.eye(dim, dtype=torch.bool).unsqueeze(0).repeat(batch_size, 1, 1).to(device),
+        torch.eye(dim, dtype=torch.bool).unsqueeze(0).repeat(batch_size, 1, 1),
         float('inf')
     )
 
     trace = struct_var.trace
-    res = torch.zeros(len(trace)).to(device)
+    log_prob = torch.zeros(batch_size)
 
     for i in range(batch_size):
-        res[i] += calc_trace_log_prob(used_logits[i], trace[i], lengths[i])
+        log_prob[i] += calc_trace_log_prob(used_logits[i], trace[i], lengths[i])
 
-    return res
+    return log_prob
 
-
-# defines F_cond for arborescence
-# samples from the conditional distribution p(E | T) of exponentials given the execution trace
 def arb_cond(struct_var, logits, uniform, lengths, **kwargs):
+    '''
+    Defines F_cond for arborescence
+    Samples for the conditional distribution p(E | T) of exponentials given the execution trace
+
+    Input
+    --------------------
+    struct_var  : Arborescence (defined in arborescence.utils)
+                  Contains a batch of arborescences with the corresponding execution traces
+
+    logits      : torch.Tensor | batch_size x dim x dim |
+                  Contains parameters (log(mean)) of the exponential distributions of edge weights
+
+    uniform     : torch.Tensor | batch_size x dim x dim |
+                  Contains realizations of the independent uniform variables, that will be transformed to conditional samples
+
+    lengths     : torch.Tensor | batch_size | 
+                  Contains dimensions of graphs in the batch (lengths[i] <= dim)
+
+    **kwargs    : Needed to support usage of different F_cond in the estimators' implementation
+
+    Output
+    --------------------
+    cond_exp    : torch.Tensor | batch_size x dim x dim |
+                  Contains conditional samples from p(E | T)
+    '''
     batch_size = logits.shape[0]
     cond_exp = torch.zeros_like(logits)
 
@@ -80,6 +139,5 @@ def arb_cond(struct_var, logits, uniform, lengths, **kwargs):
             logits=logits[i, :lengths[i], :lengths[i]] + non_minimums,
             uniform=uniform[i, :lengths[i], :lengths[i]],
             enable_grad=False)
-
 
     return cond_exp
