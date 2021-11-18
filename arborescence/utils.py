@@ -88,7 +88,7 @@ def arb_mask_unused_values(values, root=0, lengths=None, **kwargs):
     Output
     --------------------
     masked_values : torch.Tensor | batch_size x dim x dim |
-                    Contains a tensor of masked elements
+                    Contains the masked tensor
     '''
     batch_size = values.shape[0]
     dim = values.shape[1]

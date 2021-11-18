@@ -1,7 +1,10 @@
 import torch
 
 class BatchDisjointSets():
-    
+    '''
+    Defines a batch version of the disjoint set union (DSU) data structure
+    It is typically used in the implementation of the Kruskal's algorithm for faster performance
+    '''
     def __init__(self, bsz, dim):
         self.bsz = bsz
         self.dim = dim
@@ -22,13 +25,31 @@ class BatchDisjointSets():
     def get_mask(self):
         return torch.einsum('bij,bik->bjk', (self.sets.float(), self.sets.float())).bool()
 
+def span_mask_unused_values(values, fill=float('inf'), **kwargs):
+    '''
+    Used in E-REINFORCE for correct calculation of the exponential score function
+    Used in f_cond to mask the unused positions in the conditional samples
+    Masks the lower-triangular part of the matrix, including the main diagonal
 
-def span_mask_unused_values(w, value=float('inf'), **kwargs):
-    batch_size, dim, _ = w.size()
+    Input
+    --------------------
+    values        : torch.Tensor | batch_size x dim x dim |
+                    Contains a tensor of elements to be masked
+
+    fill          : float
+                    Value that will be assigned to unused values
+
+    **kwargs      : Needed to support usage of different mask functions in the estimators' implementation
+
+    Output
+    --------------------
+    masked_values : torch.Tensor | batch_size x dim x dim |
+                    Contains the masked tensor
+    '''
+    batch_size, dim, _ = values.size()
     mask = torch.tril(torch.ones(1, dim, dim, dtype=torch.bool))
-    masked_w = w.masked_fill(mask, value)
-    return masked_w
-
+    masked_values = values.masked_fill(mask, fill)
+    return masked_values
 
 def get_lightest_edge(w):
     batch_size, dim, _ = w.size()
