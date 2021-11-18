@@ -20,8 +20,8 @@ def _parse_args(args):
     parser.add_argument('--dim', type=int, default=7, help='Number of graph vertices')
     parser.add_argument('--estimator', choices=['E_reinforce', 'T_reinforce', 'relax'], default='T_reinforce')
     parser.add_argument('--num_mc', type=int, default=10, help='Number of MC samples at eval')
-    parser.add_argument('--num_samples', type=int, default=1, help='Number of MC samples at training')
-    parser.add_argument('--plus_samples', type=int, default=1, help='Number of latent samples used in REINFORCE+')
+    parser.add_argument('--num_samples', type=int, default=1, help='Number of independent stochastic gradient samples at training')
+    parser.add_argument('--plus_samples', type=int, default=1, help='Number of samples used in inner averaging in REINFORCE+; 1 corresponds to REINFORCE')
 
     parser.add_argument('--hidden', type=int, default=32, help='Dimension of hidden layer for RELAX critic')
     parser.add_argument('--iters', type=int, default=50000, help='Number of iterations to train')
