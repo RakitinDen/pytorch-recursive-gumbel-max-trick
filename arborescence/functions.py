@@ -92,7 +92,7 @@ def arb_log_prob(struct_var, logits, lengths, **kwargs):
 def arb_cond(struct_var, logits, uniform, lengths, **kwargs):
     '''
     Defines F_cond for arborescence
-    Samples for the conditional distribution p(E | T) of exponentials given the execution trace
+    Samples from the conditional distribution p(E | T) of exponentials given the execution trace
 
     Input
     --------------------

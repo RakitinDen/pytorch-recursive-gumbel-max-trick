@@ -1,6 +1,20 @@
 import torch
 
 class Arborescence:
+    '''
+    Defines the class wrapper for arborescence
+
+    arborescence    : torch.Tensor | batch_size x dim x dim |
+                      Binary matrix that defines the arborescence
+
+    trace           : list[dict_(1), ..., dict_(batch_size)]
+    trace[b].mask   : torch.Tensor | n_steps x dim x dim |
+    trace[b].min_x  : torch.Tensor | n_steps |
+    trace[b].min_y  : torch.Tensor | n_steps |
+                      Contains the execution trace
+                      Each of 'n_steps' minimum choices in the algorithm is encoded as the triple (mask, min_x, min_y)
+                      Mask defines the elements among which the minimum is taken, (min_x, min_y) defines the argminimum
+    '''
     def __init__(self, arborescence, trace):
         self.arborescence = arborescence
         self.trace = trace
@@ -8,7 +22,6 @@ class Arborescence:
     def detach(self):
         arborescence = self.arborescence.detach()
         trace = self.trace
-
         return Arborescence(arborescence, trace)
 
     def to(self, device):
@@ -39,9 +52,9 @@ def calc_trace_log_prob(logits, trace, length):
                   Unused weights (diagonal and edges going to the root) are set to be +inf
 
     trace       : dict
-         mask   : torch.Tensor | n_steps x dim x dim |
-         min_x  : torch.Tensor | n_steps |
-         min_y  : torch.Tensor | n_steps | 
+        mask    : torch.Tensor | n_steps x dim x dim |
+        min_x   : torch.Tensor | n_steps |
+        min_y   : torch.Tensor | n_steps | 
 
                   Contains the execution trace
                   Each of 'n_steps' minimum choices in the algorithm is encoded as the triple (mask, min_x, min_y)

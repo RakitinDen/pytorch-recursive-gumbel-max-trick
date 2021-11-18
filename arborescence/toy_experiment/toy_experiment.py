@@ -92,7 +92,7 @@ def run_toy_example(args=None):
             raise ValueError("RELAX does not support LOO baseline")
 
         estimator = relax
-        critic = RELAXCritic(args.d, args.hidden)
+        critic = RELAXCritic(args.dim, args.hidden)
         tunable = critic.parameters()
     else:
         raise ValueError("only E_reinforce, T_reinforce or relax")
@@ -112,11 +112,11 @@ def run_toy_example(args=None):
 
     # start of the cycle
     for i in tqdm(range(args.iters)):
-        if i % eval_every == 0:
-            u_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc, args.dim, args.dim))
-            v_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc, args.dim, args.dim))
-            logits_mc = logits.unsqueeze(0).expand(args.num_mc, args.dim, args.dim)
-            lengths_mc = torch.full((args.num_mc,), args.dim, dtype=torch.long)
+        if i % args.eval_every == 0:
+            u_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc * args.plus_samples, args.dim, args.dim))
+            v_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc * args.plus_samples, args.dim, args.dim))
+            logits_mc = logits.unsqueeze(0).expand(args.num_mc * args.plus_samples, args.dim, args.dim)
+            lengths_mc = torch.full((args.num_mc * args.plus_samples,), args.dim, dtype=torch.long)
 
             exp_mc = uniform_to_exp(logits_mc, u_mc, enable_grad=True)
             struct_var_mc = arb_struct(exp_mc, lengths_mc).to(device)
@@ -127,7 +127,8 @@ def run_toy_example(args=None):
                 logits=logits_mc, lengths=lengths_mc,
                 f_log_prob=arb_log_prob, f_cond=arb_cond,
                 exp=exp_mc, uniform=v_mc, critic=critic,
-                mask_unused_values=arb_mask_unused_values
+                mask_unused_values=arb_mask_unused_values,
+                plus_samples=args.plus_samples
             ).detach().cpu().numpy()
 
             grad_std = np.std(d_logits, 0)
@@ -137,10 +138,10 @@ def run_toy_example(args=None):
 
         optim.zero_grad()
 
-        u = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples, args.dim, args.dim))
-        v = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples, args.dim, args.dim))
-        logits_n = logits.unsqueeze(0).expand(args.num_samples, args.dim, args.dim)
-        lengths_n = torch.full((args.num_samples,), args.dim, dtype=torch.long)
+        u = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples * args.plus_samples, args.dim, args.dim))
+        v = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples * args.plus_samples, args.dim, args.dim))
+        logits_n = logits.unsqueeze(0).expand(args.num_samples * args.plus_samples, args.dim, args.dim)
+        lengths_n = torch.full((args.num_samples * args.plus_samples,), args.dim, dtype=torch.long)
 
         exp = uniform_to_exp(logits_n, u, enable_grad=True)
         struct_var = arb_struct(exp, lengths_n).to(device)
@@ -151,7 +152,8 @@ def run_toy_example(args=None):
             logits=logits_n, lengths=lengths_n,
             f_log_prob=arb_log_prob, f_cond=arb_cond,
             exp=exp, uniform=v, critic=critic,
-            mask_unused_values=arb_mask_unused_values
+            mask_unused_values=arb_mask_unused_values,
+            plus_samples=args.plus_samples
         )
 
         if tunable:

@@ -36,7 +36,7 @@ def _parse_args(args):
     return parser.parse_args(args)
 
 
-def loss(edges):
+def span_loss(edges):
     '''
     Loss is the number of edges that are not connected to the vertex with index 0
     The optimal configuration of the spanning tree is the "star"
@@ -116,21 +116,22 @@ def run_toy_example(args=None):
 
     # start of the cycle
     for i in tqdm(range(args.iters)):
-        if i % 500 == 0:
-            u_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc, args.dim, args.dim))
-            v_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc, args.dim, args.dim))
-            logits_mc = logits.unsqueeze(0).expand(args.num_mc, args.dim, args.dim)
+        if i % args.eval_every == 0:
+            u_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc * args.plus_samples, args.dim, args.dim))
+            v_mc = torch.distributions.utils.clamp_probs(torch.rand(args.num_mc * args.plus_samples, args.dim, args.dim))
+            logits_mc = logits.unsqueeze(0).expand(args.num_mc * args.plus_samples, args.dim, args.dim)
 
             exp_mc = uniform_to_exp(logits_mc, u_mc, enable_grad=True)
             struct_var_mc = span_struct(exp_mc)
-            loss_value_mc = loss(struct_var_mc)
+            loss_value_mc = span_loss(struct_var_mc)
 
             d_logits = estimator(
                 loss_value=loss_value_mc, struct_var=struct_var_mc,
                 logits=logits_mc,
                 f_log_prob=span_log_prob, f_cond=span_cond,
                 exp=exp_mc, uniform=v_mc, critic=critic,
-                mask_unused_values=span_mask_unused_values
+                mask_unused_values=span_mask_unused_values,
+                plus_samples=args.plus_samples
             ).detach().cpu().numpy()
 
             grad_std = np.std(d_logits, 0)
@@ -140,20 +141,21 @@ def run_toy_example(args=None):
 
         optim.zero_grad()
 
-        u = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples, args.dim, args.dim))
-        v = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples, args.dim, args.dim))
-        logits_n = logits.unsqueeze(0).expand(args.num_samples, args.dim, args.dim)
+        u = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples * args.plus_samples, args.dim, args.dim))
+        v = torch.distributions.utils.clamp_probs(torch.rand(args.num_samples * args.plus_samples, args.dim, args.dim))
+        logits_n = logits.unsqueeze(0).expand(args.num_samples * args.plus_samples, args.dim, args.dim)
 
         exp = uniform_to_exp(logits_n, u, enable_grad=True)
         struct_var = span_struct(exp)
-        loss_value = loss(struct_var)
+        loss_value = span_loss(struct_var)
 
         d_logits = estimator(
             loss_value=loss_value, struct_var=struct_var,
             logits=logits_n,
             f_log_prob=span_log_prob, f_cond=span_cond,
             exp=exp, uniform=v, critic=critic,
-            mask_unused_values=span_mask_unused_values
+            mask_unused_values=span_mask_unused_values,
+            plus_samples=args.plus_samples
         )
 
         if tunable:

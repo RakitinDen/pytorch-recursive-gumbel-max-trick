@@ -1,14 +1,29 @@
 import torch
+
 import sys
 sys.path.append('../')
-
 from estimators import uniform_to_exp
 from matching.utils import Matching
 
-# defines F_struct for perfect matching
-# applies the "crossing" algorithm to a perturbed weight matrix
-# it recursively finds argminimum and excludes the corresponding row and column
 def matching_struct(exp, **kwargs):
+    '''
+    Defines F_struct for perfect matching
+    Applies the "crossing" algorithm to a weight matrix 'exp'
+    It recursively finds argminimum and excludes the corresponding row and column
+
+    Input
+    --------------------
+    exp         : torch.Tensor | batch_size x dim x dim |
+                  Contains a batch of weight matrices
+
+    **kwargs    : Needed to support usage of different F_struct in the estimators' implementation
+
+    Output
+    --------------------
+    struct_var  : Matching (defined in matching.utils)
+                  Contains perfect matchings represented as binary masks
+                  with the corresponding execution traces
+    '''
     batch_size = exp.shape[0]
     dim = exp.shape[1]
 
@@ -40,20 +55,60 @@ def matching_struct(exp, **kwargs):
         'min_y' : min_y
     }
 
-    return Matching(matching, trace)
+    struct_var = Matching(matching, trace)
+    return struct_var
 
-# defines F_log_prob for perfect matching
-# calculates the log probability log(p(T)) of the execution trace
 def matching_log_prob(struct_var, logits, **kwargs):
+    '''
+    Defines F_log_prob for perfect matching
+    Calculates the log probability log(p(T)) of the execution trace
+
+    Input
+    --------------------
+    struct_var  : Matching (defined in matching.utils)
+                  Contains perfect matchings represented as binary masks
+                  with the corresponding execution traces
+
+    logits      : torch.Tensor | batch_size x dim x dim |
+                  Contains parameters (log(mean)) of the exponential distributions of edge weights
+
+    **kwargs    : Needed to support usage of different F_log_prob in the estimators' implementation
+
+    Output
+    --------------------
+    log_prob    : torch.Tensor | batch_size |
+                  Contains log probabilities of the execution traces for graphs in the batch
+    '''
     mask = struct_var.trace['mask']
     min_logits_sum = -(logits * struct_var.matching).sum(dim=(-1, -2))
     other_logits_sum = -torch.sum(torch.logsumexp(-(mask + logits[:, None, :, :]), dim=(-1, -2)), dim=-1)
+    log_prob = min_logits_sum + other_logits_sum
+    return log_prob
 
-    return min_logits_sum + other_logits_sum
-
-# defines F_cond for perfect matching
-# samples from the conditional distribution p(E | T) of exponentials given the execution trace
 def matching_cond(struct_var, logits, uniform, **kwargs):
+    '''
+    Defines F_cond for perfect matching
+    Samples from the conditional distribution p(E | T) of exponentials given the execution trace
+
+    Input
+    --------------------
+    struct_var  : Matching (defined in matching.utils)
+                  Contains perfect matchings represented as binary masks
+                  with the corresponding execution traces
+
+    logits      : torch.Tensor | batch_size x dim x dim |
+                  Contains parameters (log(mean)) of the exponential distributions of edge weights
+
+    uniform     : torch.Tensor | batch_size x dim x dim |
+                  Contains realizations of the independent uniform variables, that will be transformed to conditional samples
+
+    **kwargs    : Needed to support usage of different F_cond in the estimators' implementation
+
+    Output
+    --------------------
+    cond_exp    : torch.Tensor | batch_size x dim x dim |
+                  Contains conditional samples from p(E | T)
+    '''
     matching = struct_var.matching
     mask = struct_var.trace['mask']
     min_x = struct_var.trace['min_x']
@@ -63,7 +118,7 @@ def matching_cond(struct_var, logits, uniform, **kwargs):
     dim = struct_var.matching.shape[1]
 
     exp = uniform_to_exp(logits, uniform)
-    exp_cond = torch.zeros_like(logits)
+    cond_exp = torch.zeros_like(logits)
 
     min_parameters = -torch.logsumexp(-(mask + logits[:, None, :, :]), dim=(-1, -2))
 
@@ -78,9 +133,9 @@ def matching_cond(struct_var, logits, uniform, **kwargs):
     bin_mask[bin_mask == 0] = 1
     bin_mask[bin_mask == float('inf')] = 0
 
-    exp_cond += (bin_mask * exp_min[:, :, None, None]).sum(dim=1)
+    cond_exp += (bin_mask * exp_min[:, :, None, None]).sum(dim=1)
 
     non_minimums = 1 - matching
-    exp_cond += non_minimums * exp
+    cond_exp += non_minimums * exp
 
-    return exp_cond
+    return cond_exp
