@@ -6,3 +6,4 @@ Chu-Liu Edmonds' algorithm is implemented in C++. To compile and install it, go 
 ```
 python setup.py install
 ```
+Toy experiment consists in optimizing a vector of parameters of exponentials with respect to the loss function, that is equal to the negative maximal number of outgoing edges amond all the vertices in the arborescence. The optimal configuration of the arborescence is the graph in which all the edges come from the root.
