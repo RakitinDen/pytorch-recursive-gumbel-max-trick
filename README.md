@@ -9,7 +9,7 @@ The repository contains the code for 4 structured variables:
 * Spanning tree (Kruskal's algorithm).
 
 For each of the variables, the implementation contains:
-* Sampling structured variable and the execution trace (applying one of the algorithms above to a perturbed input)
+* Sampling structured variable and the execution trace
 * Calculating log probability of the execution trace
 * Sampling from the conditional distribution of the exponentials given the execution trace.
 
