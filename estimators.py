@@ -1,3 +1,7 @@
+# Estimators are partially based on the following repositories:
+# https://github.com/agadetsky/pytorch-pl-variance-reduction
+# https://github.com/sdrobert/pydrobert-pytorch
+
 import torch
 
 def uniform_to_exp(logits, uniform=None, enable_grad=False):
