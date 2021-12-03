@@ -24,7 +24,7 @@ class Matching:
         trace = self.trace
         return Matching(matching, trace)
 
-    def to(self, device)
+    def to(self, device):
         matching = self.matching.to(device)
         trace = {}
         trace['mask'] = self.trace['mask'].to(device)

@@ -55,7 +55,7 @@ def span_loss(edges):
     edges_not_from_zero = edges[:, 0, :] != 0
     edges_not_to_zero = edges[:, 1, :] != 0
     loss = (edges_not_from_zero & edges_not_to_zero).sum(dim=-1)
-    return loss
+    return loss.float()
 
 def run_toy_example(args=None):
     args = _parse_args(args)
@@ -96,7 +96,7 @@ def run_toy_example(args=None):
             raise ValueError("RELAX does not support LOO baseline")
 
         estimator = relax
-        critic = RELAXCritic(args.d, args.hidden)
+        critic = RELAXCritic(args.dim, args.hidden)
         tunable = critic.parameters()
     else:
         raise ValueError("only E_reinforce, T_reinforce or relax")
