@@ -2,6 +2,10 @@
 
 This repository contains the PyTorch impementation of main algorithms and how-to-use examples from our paper [Leveraging Recursive Gumbel-Max Trick for Approximate Inference in Combinatorial Spaces](https://arxiv.org/abs/2110.15072).
 
+<p align="middle">
+	<img width="450" src="../figures/main.png">
+</p>
+
 The repository contains the code for 4 structured variables:
 * Arborescence (Edmonds' algorithm)
 * Binary tree (divide-and-conquer algorithm)

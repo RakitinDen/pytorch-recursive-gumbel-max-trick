@@ -108,7 +108,7 @@ def relax(loss_value, struct_var, logits, exp, critic, f_log_prob, f_cond, unifo
     e_2 ~ p(E | T ; logits) - conditional exponential sample
     c(.)                    - critic (typically, a neural network)
 
-    e_1 and e_2 are sampled using the reparameterization trick ('uniform_to_exp' transformation)
+    e_1 and e_2 are sampled using the reparameterization trick
     (d / d logits) c(e_1) and (d / d logits) c(e_2) are the reparameterization gradients
 
     In code, exp := e_1, cond_exp := e_2
