@@ -1,4 +1,4 @@
-# Estimators are partially based on the following repositories:
+# Estimators are partially based on the "estimators.py" from the following repositories:
 # https://github.com/agadetsky/pytorch-pl-variance-reduction
 # https://github.com/sdrobert/pydrobert-pytorch
 
