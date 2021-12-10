@@ -12,12 +12,12 @@ Toy experiment consists in optimizing a vector of parameters of exponentials wit
 	<img width="750" src="../figures/exp_arborescence.png">
 </p>
 
-The plot above shows the performance of different gradient estimators on the described optimization problem with dimension size equal to `10` and `15000` gradient updates. Each gradient estimator uses `3` MC samples: 
+The plot above shows the performance of different gradient estimators on the described optimization problem with dimension size equal to `10` and `15000` gradient updates. Each gradient estimator uses `3` MC samples at training: 
 
 * `E_reinforce`, `T_reinforce` and `relax` are calculated as the empirical average of the independent estimates;
 * `E_reinforce+` and `T_reinforce+` use 3 samples for constructing leave-one-out baselines.
 
-To obtain the plot, launch the `plot_toy_arborescence.ipynb` after running the following commands:
+To obtain the plot, go to the folder `toy_experiment` and launch the `plot_toy_arborescence.ipynb` after running the following commands:
 ```
 python toy_experiment.py --dim 10 --iters 15000 --lr 0.01 --estimator E_reinforce --num_samples 3 --plus_samples 1 
 python toy_experiment.py --dim 10 --iters 15000 --lr 0.01 --estimator E_reinforce --num_samples 1 --plus_samples 3
