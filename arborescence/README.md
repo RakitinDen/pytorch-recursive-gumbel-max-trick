@@ -9,7 +9,7 @@ python setup.py install
 Toy experiment consists in optimizing a vector of parameters of exponentials with respect to the loss function, that is equal to the expected negative maximal number of outgoing edges amond all the vertices in the arborescence. The optimal configuration of the arborescence is the graph in which all the edges come from the root. 
 
 <p align="middle">
-	<img width="450" src="../figures/exp_arborescence.png">
+	<img width="750" src="../figures/exp_arborescence.png">
 </p>
 
 The plot above shows the performance of different gradient estimators on the described optimization problem with dimension size equal to `10` and `15000` gradient updates. Each gradient estimator uses `3` MC samples: 
