@@ -18,7 +18,7 @@ from estimators import uniform_to_exp, E_reinforce, T_reinforce, relax
 def _parse_args(args):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dim', type=int, default=7, help='Number of graph vertices')
+    parser.add_argument('--dim', type=int, default=10, help='Number of graph vertices')
     parser.add_argument('--estimator', choices=['E_reinforce', 'T_reinforce', 'relax'], default='T_reinforce')
     parser.add_argument('--num_mc', type=int, default=10, help='Number of MC samples at eval')
     parser.add_argument('--num_samples', type=int, default=1, help='Number of independent stochastic gradient samples at training')
